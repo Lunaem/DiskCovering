@@ -1,4 +1,4 @@
-package run;
+package run2;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;

@@ -6,12 +6,13 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
+import run.Data;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.ListIterator;
-import run.Data;
+
 import geometricShapes.Point;
 //TODO delete TRO
 /**
@@ -26,7 +27,7 @@ public class CircleSpaceCalculation {
 	//-------------ATTRIBUTES-----------------
 
 	//List to store all circles 
-	public ArrayList<Circle> listOfCircles_Data = new ArrayList<Circle>();
+	public ArrayList<Integer> listOfCircles_Data = new ArrayList<Integer>();
 	public boolean finished;
 	
 	//-----------Only for one iteration----------------
@@ -84,15 +85,16 @@ public class CircleSpaceCalculation {
 	//loads data of circles
 	public void loadData(Data data) {
 		
-		for(Circle c: data.getListOfCircles_Dat()) {
-			listOfCircles_Data.add(c);
+		for(int radius: data.getListOfCircles_Data()) {
+			listOfCircles_Data.add(radius);
 		}
 		if(listOfCircles_Data.isEmpty()) {
 			System.out.print("List with data is empty!");
 		}
 		
 		//sort list of circles
-		Collections.sort(listOfCircles_Data, CircleSpaceCalculation.circleComparator);
+		//Collections.sort(listOfCircles_Data, CircleSpaceCalculation.circleComparator);
+		Collections.sort(listOfCircles_Data);
 	}
 	/**
 	 * Find biggest circle that is completely covered by given circles
@@ -101,15 +103,16 @@ public class CircleSpaceCalculation {
 		finished = false;
 		int iteration = 0;
 		
-		double minSpace = getSpace(listOfCircles_Data.get(0));
+		double minSpace = getSpace(new Circle(listOfCircles_Data.get(0)));
 		double maxSpace = 0;
 		
-		for(Circle c:listOfCircles_Data){
-			maxSpace += (Math.pow(c.getRadius(),2) * Math.PI);
+		for(int radius:listOfCircles_Data){
+			maxSpace += (Math.pow(radius,2) * Math.PI);
 	    } 
 		
 		//try to cover circles of decreasing size
 		while(!(finished && ((maxSpace - minSpace) <=  1e-10))) {
+			listOfCirclesToPlace.clear();
 			listOfPlacedCircles.clear();
 			listOfAlignementCircles.clear();
 			listOfIntersectionPoints.clear();
@@ -160,7 +163,12 @@ public class CircleSpaceCalculation {
 	 */
 	private boolean fillOuterAlignementCircle(Circle outerAlignementCircle) {
 		listOfAlignementCircles.add(outerAlignementCircle);
-		listOfCirclesToPlace = (ArrayList<Circle>) listOfCircles_Data.clone();
+		for(int i = 0; i <= listOfCircles_Data.size() -1; i++) {
+			Circle c = new Circle (listOfCircles_Data.get(i));
+			listOfCirclesToPlace.add(c);
+		}
+		
+		if(global_iteration_count == 1) listOfCirclesToPlace.get(4).setStroke(Color.GOLD);
 		
 		uncoveredSpace = new Circle(outerAlignementCircle.getCenterX(), outerAlignementCircle.getCenterY(), outerAlignementCircle.getRadius());
 		
@@ -258,6 +266,7 @@ public class CircleSpaceCalculation {
 		}
 		return newAlignmentCircle;
 	}
+	
 	private ArrayList<Circle> placeCircleOverHole(Point veryFirstIntersectionPoint, Circle currentCircle, Circle currentAlignmentCircle, ArrayList<Circle> currentRow, ArrayList<Point> intersectionPointsOfCirclesOfRow) {
 		//ArrayList<Circle> currentRow; = new ArrayList<Circle>();
 		if(intersectionPointsOfCirclesOfRow.size() == 2) {
@@ -293,7 +302,6 @@ public class CircleSpaceCalculation {
 					
 					//fittingCircle = listOfCirclesToPlace.get(i);
 					fittingCircle = c2;
-					
 					//listIterator.remove();
 				}
 			}
@@ -301,7 +309,8 @@ public class CircleSpaceCalculation {
 				System.out.println("WTF");
 				fittingCircle.setCenterX(c.getCenterX());
 				fittingCircle.setCenterY(c.getCenterY());
-				fittingCircle.setStroke(Color.BLUE);
+				
+				if(fittingCircle.getStroke() == null) fittingCircle.setStroke(Color.BLUE);
 				
 				listOfPlacedCircles.add(fittingCircle);
 				currentRow.add(fittingCircle);
@@ -397,6 +406,7 @@ public class CircleSpaceCalculation {
 		listOfCirclesToPlace.remove(0);
 		return false;
 	}
+	
 	/**
 	 * Finds very First Intersection Point that must be covered to fill on alignment circle
 	 * @param firstCircle circle that is placed first
@@ -424,18 +434,6 @@ public class CircleSpaceCalculation {
 		return veryFirstIntersectionPoint;
 	}
 	
-	/**
-	 * looks if circle is covered 
-	 * 
-	 * @return if circle covered -> true, if circle not covered -> false
-	 */
-	public boolean lookifCircleIsCovered(ArrayList<Circle> allCirclesOfCurrentRow, Circle alginmentCircle) {
-		
-		lookIfAlignmentCircleIsCovered(allCirclesOfCurrentRow, alginmentCircle);
-		return finished;
-		//else return false;
-	}
-
 
 	/**
 	 * Places one Circle
@@ -453,10 +451,12 @@ public class CircleSpaceCalculation {
 			System.out.println("Intersectionlist is empty");
 		}
 		
-		Point intersectPoint = findRightIntersectionPoint(intersectPoints);
+		Point intersectPoint = findAlginmentIntersectionPoint(intersectPoints);
 		lastIntersectPoint_OuterCircleToCircle = intersectPoint;	
 		
-		currentCircle = findCurrentCircleCenter(currentCircle, intersectPoint, outerCircle);
+		currentCircle = findCircleCenterWithIntersectionPoint(currentCircle, intersectPoint, outerCircle);
+		
+		listOfPlacedCircles.add(currentCircle);
 		
 		return currentCircle;
 	}
@@ -468,7 +468,7 @@ public class CircleSpaceCalculation {
 	 * @param outerCircle circle that is to be covered
 	 * @return intersection point of circle and outerCircle that is used to place the next circle	 
 	 */
-	private Circle findCurrentCircleCenter(Circle currentCircle, Point intersectPoint, Circle outerCircle) {
+	private Circle findCircleCenterWithIntersectionPoint(Circle currentCircle, Point intersectPoint, Circle outerCircle) {
 		
 		Point currentCircle_center = calculateCenterOfCircle(currentCircle, intersectPoint, outerCircle);
 		
@@ -481,7 +481,6 @@ public class CircleSpaceCalculation {
 		currentCircle.setCenterY(currentCircle_center.getY());
 		}
 		
-		uncoveredSpace = Shape.subtract(uncoveredSpace, currentCircle);
 		
 		return currentCircle;
 	}
@@ -491,7 +490,7 @@ public class CircleSpaceCalculation {
 	 * @param intersectPoints list of intersection points between circle and outerCircle
 	 * @return intersection point of circle and outerCircle that is used to place the next circle	 
 	 */
-	private Point findRightIntersectionPoint(ArrayList<Point> intersectPoints) {
+	private Point findAlginmentIntersectionPoint(ArrayList<Point> intersectPoints) {
 		Point intersectPoint = null;
 		
 		if(Math.abs(intersectPoints.get(0).getX()- lastIntersectPoint_OuterCircleToCircle.getX()) < threshold && Math.abs(intersectPoints.get(0).getY()- lastIntersectPoint_OuterCircleToCircle.getY()) < threshold){
@@ -518,7 +517,6 @@ public class CircleSpaceCalculation {
 		if(currentCircle.getRadius() > outerCircle.getRadius()) {
 			currentCircle.setCenterX(outerCircle.getCenterX());
 			currentCircle.setCenterY(outerCircle.getCenterY());
-			uncoveredSpace = Shape.subtract(uncoveredSpace, currentCircle);
 		}
 		
 		return currentCircle;

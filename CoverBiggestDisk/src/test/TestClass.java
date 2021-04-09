@@ -10,7 +10,7 @@ import drawing.CircleSpaceCalculation;
 import geometricShapes.Point;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
-import run.Data;
+import run2.Data;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
