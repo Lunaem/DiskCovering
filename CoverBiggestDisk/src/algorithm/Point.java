@@ -10,40 +10,24 @@ public class Point {
         this.setY(y);
     }
 
-	/**
-	 * getter for x
-	 * @return x
-	 */
 	public double getX() {
 		return x;
 	}
 
-	/**
-	 * setter for x
-	 * @param x
-	 */
 	public void setX(double x) {
 		this.x = x;
 	}
 
-	/**
-	 * getter for y
-	 * @return y
-	 */
 	public double getY() {
 		return y;
 	}
 
-	/**
-	 * setter for y
-	 * @param y
-	 */
 	public void setY(double y) {
 		this.y = y;
 	}
 	
 	/**
-	 * calculates the distance to another point p2
+	 * calculates the (euclidean) distance to another point p2 
 	 * @param p2 other point
 	 * @return the distance 
 	 */
@@ -55,9 +39,10 @@ public class Point {
 			return distance;
 	}
 	
+	
+	
 	/**
-	 * @param p1
-	 * @param p2
+	 * @param p
 	 * @return
 	 */
 	public Point subtract(Point p) {
@@ -66,24 +51,14 @@ public class Point {
 
 	/**
 	 * 
-	 * @param p1
-	 * @param p2
+	 * @param p
 	 * @return
 	 */
 	public double cross(Point p) {
 		return this.x * p.getY() - this.y * p.getX();	
 	}
 	
-	//TODO nesesarry ?
-	@Override
-	public boolean equals(Object obj) {
-		if(!(obj instanceof Point)) {
-			return false;
-		}
-		Point p2 = (Point) obj;
-		
-		return (this.x == p2.getX() && this.y == p2.getY());
-	}
+	
 	
 	
 }

@@ -9,7 +9,7 @@ import run.Data;
 
 public class CircleCoverage {
 	//threshold used to allow minimal errors in calculations
-		final double threshold = 1e-6;
+		//final double threshold = 1e-6;
 		//var used to stop the algorithm after 
 		int stop_iteration = 1800; //TODO DELETE , add ad debug
 		int global_iteration_count;

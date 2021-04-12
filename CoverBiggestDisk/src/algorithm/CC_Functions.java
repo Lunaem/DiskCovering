@@ -6,130 +6,158 @@ import java.util.ArrayList;
 import javafx.scene.shape.Circle;
 
 public class CC_Functions {
+	
 	//threshold used to allow minimal errors in calculations
-		final static double threshold = 1e-6;
+	final static double epsilon = 1e-6;
 	
 	
-	//------------Point-------------
+	//------------Calculation of Points-------------
 	
 	/**
 	 * Finds intersection point that is to be used for placing the next circle
-	 * @param intersectPoints list of intersection points between circle and outerCircle
-	 * @return intersection point of circle and outerCircle that is used to place the next circle	 
+	 * @param intersectionPoints list of intersection points between circle and alignment circle
+	 * @param prevUsedIntersectionPoint intersection point previously used for placing a circle
+	 * @return intersection point of circle and alignment circle that is used to place the next circle	 
 	 */
-	public static Point findAlginmentIntersectionPoint(ArrayList<Point> intersectPoints, Point lastIntersectionPoint) {
-		Point intersectPoint = null;
+	public static Point findNextAlginmentPoint(ArrayList<Point> intersectionPoints, Point prevUsedIntersectionPoint) {
+		Point alignnmentPoint = null;
+		try {
+			if(intersectionPoints.size() != 2) {
+				throw new Exception("findNextAlignmentPoint: Wrong Intersection Point count " + intersectionPoints.size() + " instead of 2");
+			}
+			if(intersectionPoints.get(0) == null || intersectionPoints.get(1) == null) {
+				throw new Exception("findNextAlignmentPoint: atleast one intersection point is null");
+			}
+			
+			if(Math.abs(intersectionPoints.get(0).getX()- prevUsedIntersectionPoint.getX()) < epsilon && Math.abs(intersectionPoints.get(0).getY()- prevUsedIntersectionPoint.getY()) < epsilon){
+				alignnmentPoint = intersectionPoints.get(1);
+			}
+			else if(Math.abs(intersectionPoints.get(1).getX()- prevUsedIntersectionPoint.getX()) < epsilon && Math.abs(intersectionPoints.get(1).getY()- prevUsedIntersectionPoint.getY()) < epsilon) {
+				alignnmentPoint = intersectionPoints.get(0);
+			}
+			else{
+				throw new Exception("findNextAlignmentPoint: Alginment Point not found!" );
+			}
+		}
+		catch (Exception e){
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
 		
-		if(Math.abs(intersectPoints.get(0).getX()- lastIntersectionPoint.getX()) < threshold && Math.abs(intersectPoints.get(0).getY()- lastIntersectionPoint.getY()) < threshold){
-			intersectPoint = intersectPoints.get(1);
-		}
-		else if(Math.abs(intersectPoints.get(1).getX()- lastIntersectionPoint.getX()) < threshold && Math.abs(intersectPoints.get(1).getY()- lastIntersectionPoint.getY()) < threshold) {
-			intersectPoint = intersectPoints.get(0);
-		}
-		else{
-			System.out.println(" Intersection Point not found!" );
-		}
-		
-		return intersectPoint;
+		return alignnmentPoint;
 	}
 	/**
-	 * Finds next clockwise point
-	 * @param p0 center of circle
-	 * @param firstIntersectionPoint anchor point
-	 * @param possibleSecondIntersectPoints points which are to be proved
+	 * Finds next clockwise point out of two 
+	 * determines the smallest angle to the anchor point, based on the point pCenter
+	 * @param pCenter center of alignment circle
+	 * @param anchorPoint anchor point for angle calculation
+	 * @param points points which are to be tested (expects two points)
+	 * @param ccw if true->searches counter clockwise
 	 */
-	public static Point findNextClockwisePoint(Point p0, Point firstIntersectionPoint, ArrayList<Point> possibleSecondIntersectPoints, int rows, boolean ccw) {
-				
-				Point pI = firstIntersectionPoint;
-				Point p1 = possibleSecondIntersectPoints.get(0);
-				Point p2 = possibleSecondIntersectPoints.get(1);
+	public static Point findNextClockwisePoint(Point pCenter, Point anchorPoint, ArrayList<Point> points, boolean ccw) {
+		try {
+			if(points.size() != 2) {
+				throw new Exception("findNextClockwisePoint: Wrong Point count " + points.size() + " instead of 2");
+			}
+			if(points.get(0) == null || points.get(1) == null || pCenter == null || anchorPoint == null) {
+				throw new Exception("findNextClockwisePoint: atleast one point is null");
+			}
+		}
+		catch (Exception e){
+				System.out.println(e.getMessage());
+				e.printStackTrace();
+		}
+				Point pAnchor = anchorPoint;
+				Point p1 = points.get(0);
+				Point p2 = points.get(1);
 				
 				// The atan2 functions return arctan y/x in the interval [−π , +π] radians
-				double p0_pI = Math.atan2(pI.getY() - p0.getY(), pI.getX() - p0.getX());
-				double p0_p1 = Math.atan2(p1.getY() - p0.getY(), p1.getX() - p0.getX());
-				double p0_p2 = Math.atan2(p2.getY() - p0.getY(), p2.getX() - p0.getX());
-				double angle_p0_pI_p1 = p0_pI - p0_p1;
-				double angle_p0_pI_p2 = p0_pI - p0_p2;
+				double pCenter_pAnchor = Math.atan2(pAnchor.getY() - pCenter.getY(), pAnchor.getX() - pCenter.getX());
+				double pCenter_p1 = Math.atan2(p1.getY() - pCenter.getY(), p1.getX() - pCenter.getX());
+				double pCenter_p2 = Math.atan2(p2.getY() - pCenter.getY(), p2.getX() - pCenter.getX());
+				double angle_pCenter_pAnchor_p1 = pCenter_pAnchor - pCenter_p1;
+				double angle_pCenter_pAnchor_p2 = pCenter_pAnchor - pCenter_p2;
 				
-				//place clockwise
+				// Handle wrap around angle_pCenter_pAnchor_p1
+				if (angle_pCenter_pAnchor_p1 > Math.PI) angle_pCenter_pAnchor_p1 -= 2*Math.PI;
+				else if (angle_pCenter_pAnchor_p1 < -Math.PI) angle_pCenter_pAnchor_p1 += 2*Math.PI;
 				
-					// Handle wrap around
-					if (angle_p0_pI_p1 > Math.PI) angle_p0_pI_p1 -= 2*Math.PI;
-					else if (angle_p0_pI_p1 < -Math.PI) angle_p0_pI_p1 += 2*Math.PI;
-					// Handle wrap around
-					if (angle_p0_pI_p2 > Math.PI) angle_p0_pI_p2 -= 2*Math.PI;
-					else if (angle_p0_pI_p2 < -Math.PI) angle_p0_pI_p2 += 2*Math.PI;
+				// Handle wrap around angle_pCenter_pAnchor_p2
+				if (angle_pCenter_pAnchor_p2 > Math.PI) angle_pCenter_pAnchor_p2 -= 2*Math.PI;
+				else if (angle_pCenter_pAnchor_p2 < -Math.PI) angle_pCenter_pAnchor_p2 += 2*Math.PI;
 					
-				if(rows % 2 == 0 || ccw == false) {	
-					if(angle_p0_pI_p2 > angle_p0_pI_p1) return p1;
-					else return p2;
-				}
-				//place counterclockwise
-				else {
-					if(angle_p0_pI_p2 > angle_p0_pI_p1) return p2;
+				
+				//counterclockwise option
+				if (ccw == true){
+					if(angle_pCenter_pAnchor_p2 > angle_pCenter_pAnchor_p1) return p2;
 					else return p1;
+				}
+				//default: next clockwise point
+				else{	
+					if(angle_pCenter_pAnchor_p2 > angle_pCenter_pAnchor_p1) return p1;
+					else return p2;
 				}
 				
 	}
+	
 	/**
-	 * Looks where to place the next circle
-	 * @param currentCircle circle that is about be placed
-	 * @param firstIntersectionPoint point at which the circle is to placed
-	 * @param outerCircle circle that is to be covered
+	 * Calculates the center Point of the next circle to be placed in the alignment circle
+	 * @param nextCircle circle that is about be placed
+	 * @param firstAlignmentPoint point at which the circle is to be placed on the alignment circle (first intersection point of alignment- and next-circle)
+	 * @param alignmentCircle alignment circle for placing next circle
+	 * @param tolerance tolerance for placing circles
+	 * @param ccw determines if next circle is clock- or counterclockwise
+	 * @return Center Point of next circle
 	 */
-	public static Point calculateCenterPointOfCircle(Circle currentCircle, Point firstIntersectionPoint, Circle outerCircle, double tolerance) {
+	public static Point calculateCenterPointOfNextCircle(Circle nextCircle, Point firstAlignmentPoint, Circle alignmentCircle, double tolerance, boolean ccw) {
 		
-		//currenctCircle irgendwo, aber in richtiger distanz setzen
-		currentCircle.setCenterX(outerCircle.getCenterX() + (outerCircle.getRadius() + (getDiameter(currentCircle) * tolerance)) - currentCircle.getRadius());
-		currentCircle.setCenterY(outerCircle.getCenterY());
+		//places nextCircle with tolerance at arbitrary position -> to calculate distance between intersection points with alignment circle
+		nextCircle.setCenterX(alignmentCircle.getCenterX() + (alignmentCircle.getRadius() + (getDiameter(nextCircle) * tolerance)) - nextCircle.getRadius());
+		nextCircle.setCenterY(alignmentCircle.getCenterY());
 		
-		//schnittpunkte von currentCircle mit outerCircle berechnen
-		ArrayList<Point> arbitraryintersectPoints = findIntersectionPoints(currentCircle,outerCircle);
-		
-		Point p0 = new Point(0,0);
+		ArrayList<Point> arbitraryintersectPoints = findIntersectionPoints(nextCircle,alignmentCircle);
+		Point p_AlignCenter = getCenterPoint(alignmentCircle);
 		Point p1 = arbitraryintersectPoints.get(0);
 		Point p2 = arbitraryintersectPoints.get(1);
 		
-		//distanz zwischen schnittpunkten berechnen
+		//distance between arbitrary intersection points
 		double p1_p2 = p1.calucateDistanceToPoint(p2);
 		
-		//den zweiten echten schnittpunkt bestimmen
-		//schnittpunkte zwischen outercircle und circle der durch erstens schnittpunkt gezeichnet wird
-		Circle tempCircle = new Circle(firstIntersectionPoint.getX(), firstIntersectionPoint.getY(), p1_p2);
-		ArrayList<Point> possibleSecondIntersectPoints = findIntersectionPoints(outerCircle, tempCircle);
-			//abhängig vom erstne echten schnittpunkt bestimmen, welcher der beiden der zweite echte ist
-		Point secondIntersectionPoint = findNextClockwisePoint(p0, firstIntersectionPoint, possibleSecondIntersectPoints, 0, false);
+		// --- Calculate second alignment Point ---
+			//temp circle with center at first alignment point -> second alignment point is one of temp circles intersection points
+			Circle tempCircle = new Circle(firstAlignmentPoint.getX(), firstAlignmentPoint.getY(), p1_p2);
+			ArrayList<Point> possibleSecondAlignmentPoints = findIntersectionPoints(alignmentCircle, tempCircle);
+			//determine second alignment point based on current placing direction
+			Point secondAlignmentPoint = findNextClockwisePoint(p_AlignCenter, firstAlignmentPoint, possibleSecondAlignmentPoints, ccw);		
 		
-		//mit beiden schnittpunkten und radius, das center vom kreis bestimmen
-		Circle firstIntersection = new Circle(firstIntersectionPoint.getX(),firstIntersectionPoint.getY(), currentCircle.getRadius());
-		Circle secondIntersection = new Circle(secondIntersectionPoint.getX(),secondIntersectionPoint.getY(), currentCircle.getRadius());
+		//using two circles (center at both alignment points) to determine center of nextCircle
+		Circle circle_firstAP = new Circle(firstAlignmentPoint.getX(),firstAlignmentPoint.getY(), nextCircle.getRadius());
+		Circle circle_secondAP = new Circle(secondAlignmentPoint.getX(),secondAlignmentPoint.getY(), nextCircle.getRadius());
+		ArrayList<Point> possibleCircleCenters = findIntersectionPoints(circle_firstAP, circle_secondAP);
 		
-		ArrayList<Point> possibleCircleCenter = findIntersectionPoints(firstIntersection, secondIntersection);
+		//determine correct center point, based on distance to center of alignment circle (depends on tolerance)
+		double expected_distance = ((alignmentCircle.getRadius() + (getDiameter(nextCircle) * tolerance)) - nextCircle.getRadius());
+		double distanceA = possibleCircleCenters.get(0).calucateDistanceToPoint(p_AlignCenter);
+		double distanceB = possibleCircleCenters.get(1).calucateDistanceToPoint(p_AlignCenter);
 		
-		double toleranceDistance = ((outerCircle.getRadius() + (getDiameter(currentCircle) * tolerance)) - currentCircle.getRadius());
-		
-		double distanceA = possibleCircleCenter.get(0).calucateDistanceToPoint(getCenterPoint(outerCircle));
-		double distanceB = possibleCircleCenter.get(1).calucateDistanceToPoint(getCenterPoint(outerCircle));
-		
-		if(Math.abs(distanceA - toleranceDistance) < threshold) {
-			return possibleCircleCenter.get(0);
+		if(Math.abs(distanceA - expected_distance) < epsilon) {
+			return possibleCircleCenters.get(0);
 		}
-		else if(Math.abs(distanceB - toleranceDistance) < threshold) {
-			return possibleCircleCenter.get(1);
+		else if(Math.abs(distanceB - expected_distance) < epsilon) {
+			return possibleCircleCenters.get(1);
 		}
 		else {
-			System.out.print(" Center of next Circle not found! ");
+			System.out.print("calculateCenterPointOfNextCircle: Center of next Circle not found! ");
 			return null;
 		}
 	}
 	
-	//------------IntersectionPoints--------------
 	/**
-	 * Finds the two Intersectionpoints between circles 
+	 * Returns the intersection points between 2 circles 
 	 * based on http://paulbourke.net/geometry/circlesphere/
 	 * @param circle0
 	 * @param circle1
-	 * @return
+	 * @return list of intersection points
 	 */
 	public static ArrayList<Point> findIntersectionPoints(Circle circle0, Circle circle1) {
 		ArrayList<Point> points = new ArrayList<Point>();
@@ -138,12 +166,18 @@ public class CC_Functions {
 		double dy = circle0.centerYProperty().get()-circle1.centerYProperty().get();
 		double d = Math.hypot(dx,dy);
 		
-		if((circle0.getRadius() + circle1.getRadius() + 1e8 )< d ) {
-			System.out.println(circle0.getRadius());
-			System.out.println(circle1.getRadius());
-			System.out.println(d);
+		//catch unique cases
+		if(d < (circle0.getRadius() + circle1.getRadius()) ) {
+			System.out.println("findIntersectionPoints: circles too far away -> intersection points between circles dont exist!");
 			return points;
-			
+		}
+		else if(d < Math.abs(circle0.getRadius() - circle1.getRadius())) {
+			System.out.println("findIntersectionPoints: one circle contained in other -> intersection points between circles dont exist!");
+			return points;
+		}
+		else if(d == 0 && (circle0.getRadius() == circle1.getRadius()) ) {
+			System.out.println("findIntersectionPoints: circles are identical -> intersection points between circles dont exist!");
+			return points;
 		}
 		
 		//Calculate distance from P0 to P2
@@ -156,6 +190,7 @@ public class CC_Functions {
 		double point2_x = circle1.centerXProperty().get() + (a*(dx))/d;   
 		double point2_y = circle1.centerYProperty().get() + (a*(dy))/d;     
 		
+		//Calculating the intersection points based on P2
 		double rx = ((-1) * dy) * (h/d);
 		double ry = dx * (h/d);
 		
@@ -167,100 +202,83 @@ public class CC_Functions {
 		
 		Point firstIntersectionPoint = new Point(firstIntersectionPoint_x,firstIntersectionPoint_y); 
 		Point secondIntersectionPoint  = new Point(secondIntersectionPoint_x,secondIntersectionPoint_y); 
-		
-		if(d == circle0.getRadius() + circle1.getRadius()) {
-			System.out.println("!" + firstIntersectionPoint_x + " " + firstIntersectionPoint_y);
-			System.out.println("!" + secondIntersectionPoint_x + " " + secondIntersectionPoint_y);
-		}
 		points.add(firstIntersectionPoint);
 		points.add(secondIntersectionPoint);
 		
 		return points;
 	} 
-	//TODO sonderfall in schleife rein
+
 		/**
-		 * Finds inner intersection points of one row
+		 * Finds inner intersection points between circles of one row (considers the points closest to the alignment center point) which touch uncovered space 
 		 * @param allCirclesOfCurrentRow a list of all circles of the current row
-		 * @param alignmentCircle current outerCircle
-		 * @return list of the inner intersection points that are not in other circles of the row
+		 * @param alignmentCircle alignment circle of current row
+		 * @return list of the inner intersection points that are not in other circles of the row -> points that touch uncovered space
 		 */
 		public static ArrayList<IntersectionPoint> findInnerIntersectionPoints(ArrayList<Circle> allCirclesOfCurrentRow, Circle alignmentCircle){
-			ArrayList<IntersectionPoint> points = new ArrayList<IntersectionPoint>();
+			ArrayList<IntersectionPoint> result = new ArrayList<IntersectionPoint>();
 			IntersectionPoint point = null;
+			ArrayList<Point> intersectionPoints = null;
+			double distance1, distance2;
+			Circle c1, c2;
 			
-			ArrayList<Point> possiblePoints = findIntersectionPoints(allCirclesOfCurrentRow.get(0), allCirclesOfCurrentRow.get(allCirclesOfCurrentRow.size()-1));
-			double distance1 = possiblePoints.get(0).calucateDistanceToPoint(getCenterPoint(alignmentCircle));
-			double distance2 = possiblePoints.get(1).calucateDistanceToPoint(getCenterPoint(alignmentCircle));
-			
-			if(distance1 <= distance2) {
-				point = new IntersectionPoint(possiblePoints.get(0),allCirclesOfCurrentRow.get(0),allCirclesOfCurrentRow.get(allCirclesOfCurrentRow.size()-1));
-			}
-			else if(distance1 > distance2) {
-				point = new IntersectionPoint(possiblePoints.get(1),allCirclesOfCurrentRow.get(0),allCirclesOfCurrentRow.get(allCirclesOfCurrentRow.size()-1));
-			}
-			else {
-				System.out.print("Inner Intersectionpoint not found" + distance1 + " " + distance2);
-			}
-			
-			if(!lookIfIntersectionPointInOtherCircle(point,allCirclesOfCurrentRow)) {
-				points.add(point);
-			}
-			
-			for (int i=0;i<allCirclesOfCurrentRow.size()-1;i++) {
-				if(checkIfCirclesIntersect(allCirclesOfCurrentRow.get(i), allCirclesOfCurrentRow.get(i+1))) {
-					possiblePoints = findIntersectionPoints(allCirclesOfCurrentRow.get(i), allCirclesOfCurrentRow.get(i+1));
-					distance1 = possiblePoints.get(0).calucateDistanceToPoint(getCenterPoint(alignmentCircle));
-					distance2 = possiblePoints.get(1).calucateDistanceToPoint(getCenterPoint(alignmentCircle));
+			for (int i=0;i<allCirclesOfCurrentRow.size();i++) {
+				c1 = allCirclesOfCurrentRow.get(i);
+				if (i == allCirclesOfCurrentRow.size()-1) c2 = allCirclesOfCurrentRow.get(0);
+				else c2 = allCirclesOfCurrentRow.get(i+1);
+				
+				if(checkIfCirclesIntersect(c1, c2)) {
+					intersectionPoints = findIntersectionPoints(c1, c2);
+					distance1 = intersectionPoints.get(0).calucateDistanceToPoint(getCenterPoint(alignmentCircle));
+					distance2 = intersectionPoints.get(1).calucateDistanceToPoint(getCenterPoint(alignmentCircle));
 					
 					if(distance1 < distance2) {
-						point = new IntersectionPoint(possiblePoints.get(0),allCirclesOfCurrentRow.get(i),allCirclesOfCurrentRow.get(i+1));
+						point = new IntersectionPoint(intersectionPoints.get(0),allCirclesOfCurrentRow.get(i),allCirclesOfCurrentRow.get(i+1));
 					}
 					else if(distance1 > distance2) {
-						point = new IntersectionPoint(possiblePoints.get(1),allCirclesOfCurrentRow.get(i),allCirclesOfCurrentRow.get(i+1));
+						point = new IntersectionPoint(intersectionPoints.get(1),allCirclesOfCurrentRow.get(i),allCirclesOfCurrentRow.get(i+1));
 					}
 					else {
-						System.out.print("Inner Intersectionpoint not found Loop" + " " + distance1 + " " + distance2);
+						System.out.print("findInnerIntersectionPoints: Inner Intersectionpoint not found Loop" + " " + distance1 + " " + distance2);
 					}
 					
-					if(!lookIfIntersectionPointInOtherCircle(point,allCirclesOfCurrentRow)) {
-						points.add(point);
+					if(!checkIfIntersectionPointInOtherCircle(point,allCirclesOfCurrentRow)) {
+						result.add(point);
 					}
 				}
 				
 			}
-
-			return points;
+			return result;
 		}
 	
-	//------------Circle-------------
+	//------------Calculations of Circles-------------
+	
 	/**
-	 * Finds center for currentCircle
-	 * @param currentCircle circle that is being placed
-	 * @param intersectPoint list of intersection points between circle and outerCircle
-	 * @param outerCircle circle that is to be covered
-	 * @return intersection point of circle and outerCircle that is used to place the next circle	 
+	 * Sets center for the next Circle on the alignment circle
+	 * @param nextCircle circle that is being placed
+	 * @param firstAlignmentPoint first intersection point of nextCircle and alignment circle
+	 * @param alignmentCircle current alignment circle
+	 * @param ccw counter clockwise option
+	 * @return nextCircle reference	 
 	 */
-	public static Circle findCircleCenterWithIntersectionPoint(Circle currentCircle, Point intersectPoint, Circle outerCircle, double tolerance) {
+	public static Circle setCenterOfNextCircle(Circle nextCircle, Point firstAlignmentPoint, Circle alignmentCircle, double tolerance, boolean ccw) {
 		
-		Point currentCircle_center = calculateCenterPointOfCircle(currentCircle, intersectPoint, outerCircle, tolerance);
+		Point nextCircleCenter = calculateCenterPointOfNextCircle(nextCircle, firstAlignmentPoint, alignmentCircle, tolerance, ccw);
 		
-		if(currentCircle_center == null) {
-			currentCircle.setCenterX(outerCircle.getCenterX());
-			currentCircle.setCenterY(outerCircle.getCenterY());
+		if(nextCircleCenter == null) {
+			nextCircle.setCenterX(alignmentCircle.getCenterX());
+			nextCircle.setCenterY(alignmentCircle.getCenterY());
 		}
 		else {
-		currentCircle.setCenterX(currentCircle_center.getX());
-		currentCircle.setCenterY(currentCircle_center.getY());
+		nextCircle.setCenterX(nextCircleCenter.getX());
+		nextCircle.setCenterY(nextCircleCenter.getY());
 		}
 		
 		
-		return currentCircle;
+		return nextCircle;
 	}
 	
-	
-	
 	/**
-	 * Calculates circle through three points
+	 * Calculates circle using three points
 	 * @param p1 first point 
 	 * @param p2 second point 
 	 * @param p3 third point
@@ -310,25 +328,25 @@ public class CC_Functions {
 		Circle circle = new Circle(centerX,centerY,radius);
 		
 		return circle;
-		
 	}
 	
 	/**
-	 * Looks if circle to be places is bigger than the OuterCircle
-	 * @param currentCircle circle that is about be placed
-	 * @param outerCircle circle that is to be covered
-	 * @return placed circle
+	 * Looks if next circle to be placed is bigger than the alignment Circle -> if true sets next circle on alignment circle center
+	 * @param nextCircle circle that is about be placed
+	 * @param alignmentCircle
+	 * @return nextCircle reference
 	 */
-	public static Circle checkIfCircleIsBiggerThanOuterCircle(Circle currentCircle, Circle outerCircle) {
-		if(currentCircle.getRadius() > outerCircle.getRadius()) {
-			currentCircle.setCenterX(outerCircle.getCenterX());
-			currentCircle.setCenterY(outerCircle.getCenterY());
+	public static Circle checkIfCircleIsBiggerThanAlignmentCircle(Circle nextCircle, Circle alignmentCircle) {
+		if(nextCircle.getRadius() > alignmentCircle.getRadius()) {
+			nextCircle.setCenterX(alignmentCircle.getCenterX());
+			nextCircle.setCenterY(alignmentCircle.getCenterY());
 		}
 		
-		return currentCircle;
+		return nextCircle;
 	}
 	
 	/**
+	 * 
 	 * @param a
 	 * @param b
 	 * @return
@@ -339,6 +357,7 @@ public class CC_Functions {
 	}
 	
 	//-------------Checks--------------
+	
    /**
 	 * Checks if Circles Intersect
 	 * @param c1 first circle
@@ -352,54 +371,41 @@ public class CC_Functions {
 		if (d > (c1.getRadius() + c2.getRadius())) {
 			return false;
 		}
-		//case: Intersection
-		else if(d <= Math.abs(c1.getRadius() + c2.getRadius())) {
-			return true;
-		} 
-		//case: circles are overlaying
-		else if(d==0 && c1.getRadius() == c2.getRadius()) {
-			return true;
-		}
-		else {
-			System.out.print("Interscetion check not possible");
+		else if (d < Math.abs(c1.getRadius() - c2.getRadius())) {
 			return false;
+		} 
+		//case: circles are identical
+		else if(d==0 && c1.getRadius() == c2.getRadius()) {
+			System.out.println("checkIfCirclesIntersect: inifinte # of intersection points!");
+			return true;
 		}
+		
+		return true;
 	} 
 	/**
-	 * Looks if an intersection point is in another circle of the current row
+	 * checks if an intersection point is in another circle of the current row
 	 * @param point point of intersection
-	 * @param allCirclesOfCurrentRow list of all circles of the current row
+	 * @param circles list of all circles of the current row
 	 * @return if in another circle -> true, else -> false
 	 */
-	public static boolean lookIfIntersectionPointInOtherCircle(IntersectionPoint point, ArrayList<Circle> allCirclesOfCurrentRow) {
-		ArrayList<Circle> circlesOfRow = (ArrayList<Circle>) allCirclesOfCurrentRow.clone();
-		ArrayList<Circle> otherCirclesOfRow = new ArrayList<Circle>();
-		boolean add = false;
+	public static boolean checkIfIntersectionPointInOtherCircle(IntersectionPoint point, ArrayList<Circle> circles) {
+		ArrayList<Circle> remainingCircles = new ArrayList<Circle>();
 		    
-		for(int i = 0;i<=circlesOfRow.size()-1;i++) {
-			
-			if(circlesOfRow.get(i).equals(point.getCircle1())) {
-				add = false;
-			}
-			else if(circlesOfRow.get(i).equals(point.getCircle2())) {
-				add = false;
-			}
-			else {
-				add = true;
-			}
-			if(add) {
-				otherCirclesOfRow.add(circlesOfRow.get(i));
+		for(int i = 0;i<=circles.size()-1;i++) {
+			if(! (circles.get(i).equals(point.getCircle1()) || circles.get(i).equals(point.getCircle2())) ){
+				remainingCircles.add(circles.get(i));
 			}
 		}
+		
 		boolean isIsInOtherCircle = false;
-		for(int i = 0;i<=otherCirclesOfRow.size()-1;i++) {
-			if(lookIfPointInCircle(otherCirclesOfRow.get(i), point.getPointOfIntersection())) {
+		for(int i = 0;i<=remainingCircles.size()-1;i++) {
+			if(lookIfPointInCircle(remainingCircles.get(i), point.getPointOfIntersection())) {
 				isIsInOtherCircle = true;
+				break;
 			}
 		}
 		
 		return isIsInOtherCircle;
-		
 	}
 	
 	/**
@@ -409,7 +415,7 @@ public class CC_Functions {
 	 * @return if point in circle -> true, else -> false 
 	 */
 	public static boolean lookIfPointInCircle(Circle circle, Point p) {
-		if(getCenterPoint(circle).calucateDistanceToPoint(p) < circle.getRadius()) {
+		if(getCenterPoint(circle).calucateDistanceToPoint(p) <= circle.getRadius()) {
 			return true;
 		}
 		else {

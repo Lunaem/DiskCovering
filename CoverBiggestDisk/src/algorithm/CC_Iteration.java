@@ -9,7 +9,7 @@ import javafx.scene.shape.Shape;
 
 public class CC_Iteration {
 	//threshold used to allow minimal errors in calculations
-		final double threshold = 1e-6;
+		//final double threshold = 1e-6;
 		
 		//boolean value set to true if algorithm is finished
 		private boolean finished;
@@ -185,7 +185,7 @@ public class CC_Iteration {
 	 */
 	public Circle placeNextCircle(Circle circleToBePlaced, Circle outerCircle) {
 		
-		Circle currentCircle = CC_Functions.checkIfCircleIsBiggerThanOuterCircle(circleToBePlaced,outerCircle);
+		Circle currentCircle = CC_Functions.checkIfCircleIsBiggerThanAlignmentCircle(circleToBePlaced,outerCircle);
 		Circle previousCircle = getListOfPlacedCircles().get(getListOfPlacedCircles().size()-1);
 		
 		//find intersection points
@@ -194,10 +194,10 @@ public class CC_Iteration {
 			System.out.println("Intersectionlist is empty");
 		}
 		
-		Point intersectPoint = CC_Functions.findAlginmentIntersectionPoint(intersectPoints, lastIntersectionPoint);
+		Point intersectPoint = CC_Functions.findNextAlginmentPoint(intersectPoints, lastIntersectionPoint);
 		lastIntersectionPoint = intersectPoint;	
 		
-		currentCircle = CC_Functions.findCircleCenterWithIntersectionPoint(currentCircle, intersectPoint, outerCircle, tolerance);
+		currentCircle = CC_Functions.setCenterOfNextCircle(currentCircle, intersectPoint, outerCircle, tolerance);
 		
 		listOfPlacedCircles.add(currentCircle);
 		
