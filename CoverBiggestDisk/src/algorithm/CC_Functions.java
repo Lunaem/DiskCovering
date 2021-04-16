@@ -19,7 +19,7 @@ public class CC_Functions {
 	 * @param prevUsedIntersectionPoint intersection point previously used for placing a circle
 	 * @return intersection point of circle and alignment circle that is used to place the next circle	 
 	 */
-	public static Point findNextAlginmentPoint(ArrayList<Point> intersectionPoints, Point prevUsedIntersectionPoint) {
+	public static Point findNextAlignmentPoint(ArrayList<Point> intersectionPoints, Point prevUsedIntersectionPoint) {
 		Point alignnmentPoint = null;
 		try {
 			if(intersectionPoints.size() != 2) {
@@ -36,7 +36,7 @@ public class CC_Functions {
 				alignnmentPoint = intersectionPoints.get(0);
 			}
 			else{
-				throw new Exception("findNextAlignmentPoint: Alginment Point not found!" );
+				throw new Exception("findNextAlignmentPoint: Alignment Point not found!" );
 			}
 		}
 		catch (Exception e){
@@ -166,8 +166,9 @@ public class CC_Functions {
 		double dy = circle0.centerYProperty().get()-circle1.centerYProperty().get();
 		double d = Math.hypot(dx,dy);
 		
+		
 		//catch unique cases
-		if(d < (circle0.getRadius() + circle1.getRadius()) ) {
+		if(d > (circle0.getRadius() + circle1.getRadius()) ) {
 			System.out.println("findIntersectionPoints: circles too far away -> intersection points between circles dont exist!");
 			return points;
 		}
@@ -200,10 +201,17 @@ public class CC_Functions {
 		double secondIntersectionPoint_x = point2_x - rx;
 		double secondIntersectionPoint_y = point2_y - ry;
 		
+		if(firstIntersectionPoint_x == secondIntersectionPoint_x && firstIntersectionPoint_y == secondIntersectionPoint_y) {
+			System.out.println("findIntersectionPoints: Only one Intersection Point!");
+			points.add(new Point(firstIntersectionPoint_x,firstIntersectionPoint_y));
+			return points;
+		}
+		
 		Point firstIntersectionPoint = new Point(firstIntersectionPoint_x,firstIntersectionPoint_y); 
 		Point secondIntersectionPoint  = new Point(secondIntersectionPoint_x,secondIntersectionPoint_y); 
 		points.add(firstIntersectionPoint);
 		points.add(secondIntersectionPoint);
+		
 		
 		return points;
 	} 
@@ -232,10 +240,10 @@ public class CC_Functions {
 					distance2 = intersectionPoints.get(1).calucateDistanceToPoint(getCenterPoint(alignmentCircle));
 					
 					if(distance1 < distance2) {
-						point = new IntersectionPoint(intersectionPoints.get(0),allCirclesOfCurrentRow.get(i),allCirclesOfCurrentRow.get(i+1));
+						point = new IntersectionPoint(intersectionPoints.get(0),c1,c2);
 					}
 					else if(distance1 > distance2) {
-						point = new IntersectionPoint(intersectionPoints.get(1),allCirclesOfCurrentRow.get(i),allCirclesOfCurrentRow.get(i+1));
+						point = new IntersectionPoint(intersectionPoints.get(1),c1,c2);
 					}
 					else {
 						System.out.print("findInnerIntersectionPoints: Inner Intersectionpoint not found Loop" + " " + distance1 + " " + distance2);
@@ -279,12 +287,22 @@ public class CC_Functions {
 	
 	/**
 	 * Calculates circle using three points
+	 * based on: http://web.archive.org/web/20161011113446/http://www.abecedarical.com/zenosamples/zs_circle3pts.html
 	 * @param p1 first point 
 	 * @param p2 second point 
 	 * @param p3 third point
 	 * @return circle
 	 */
 	public static Circle calculateCircleFromThreePoints(Point p1, Point p2, Point p3) {
+		try {
+			if(p1.calucateDistanceToPoint(p2) == 0 || p1.calucateDistanceToPoint(p3) == 0 || p2.calucateDistanceToPoint(p3) == 0) {
+				throw new Exception("calculateCircleFromThreePoints: Points are the same");
+			}
+		}
+		catch (Exception e){
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+	}
 		ArrayList<Point> points = new ArrayList<Point>();
 		points.add(p1);
 		points.add(p2);
@@ -317,6 +335,10 @@ public class CC_Functions {
 		double detB = -1 * findDeterminant(matB);
 		double detC = findDeterminant(matC);
 		double detD = -1 * findDeterminant(matD);
+		
+		if(detA == 0) {
+			System.out.println("calculateCircleFromThreePoints: Circle cannot be drawn over points");
+		}
 				
 		double centerX = (-1 * detB) / (2 * detA);
 		double centerY = (-1 * detC) / (2 * detA);
@@ -345,16 +367,7 @@ public class CC_Functions {
 		return nextCircle;
 	}
 	
-	/**
-	 * 
-	 * @param a
-	 * @param b
-	 * @return
-	 */
-	public static Circle makeDiameter(Point a, Point b) {
-		Point c = new Point((a.getX() + b.getX()) / 2, (a.getY() + b.getY()) / 2);
-		return new Circle(c.getX(), c.getY(), Math.max(c.calucateDistanceToPoint(a), c.calucateDistanceToPoint(b)));
-	}
+
 	
 	//-------------Checks--------------
 	
@@ -415,7 +428,7 @@ public class CC_Functions {
 	 * @return if point in circle -> true, else -> false 
 	 */
 	public static boolean lookIfPointInCircle(Circle circle, Point p) {
-		if(getCenterPoint(circle).calucateDistanceToPoint(p) <= circle.getRadius()) {
+		if(circle.getRadius() != 0 && getCenterPoint(circle).calucateDistanceToPoint(p) <= circle.getRadius() + epsilon) {
 			return true;
 		}
 		else {

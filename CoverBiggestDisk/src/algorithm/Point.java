@@ -41,22 +41,6 @@ public class Point {
 	
 	
 	
-	/**
-	 * @param p
-	 * @return
-	 */
-	public Point subtract(Point p) {
-		return new Point(this.x - p.getX(), this.y - p.getY());
-	}
-
-	/**
-	 * 
-	 * @param p
-	 * @return
-	 */
-	public double cross(Point p) {
-		return this.x * p.getY() - this.y * p.getX();	
-	}
 	
 	
 	

@@ -8,40 +8,49 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 
 public class CC_Iteration {
-	//threshold used to allow minimal errors in calculations
-		//final double threshold = 1e-6;
 		
-		//boolean value set to true if algorithm is finished
-		private boolean finished;
+		//boolean value set to true if outer alignment circle is covered
+		private boolean isCovered;
 		//boolean value whether ccw is used
-		private boolean ccw = false;
+		private boolean ccw;
 		//boolean value whether poh is used
-		private boolean poh = false;
-		
+		private boolean poh;
+		//tolerance with which the circles are placed
 		private double tolerance;
 		
+		
+		//List to store all circles that need to be placed in current iteration 
+		private ArrayList<Circle> listOfCirclesToPlace;
+		//List to store all circles placed
+		private ArrayList<Circle> listOfPlacedCircles;
+		private ArrayList<Circle> listOfAlignmentCircles;
+		
+		//point used to place circles on alignment circle
+		private Point alignmentPoint;
+		//the outer alignmentcircle
 		private Circle outerAlignmentCircle;
 		
-	//List to store all circles that need to be placed in current iteration 
-		private ArrayList<Circle> listOfCirclesToPlace = new ArrayList<Circle>();
-		//List to store all circles placed
-		private ArrayList<Circle> listOfPlacedCircles = new ArrayList<Circle>();
-		private ArrayList<Circle> listOfAlginementCircles = new ArrayList<Circle>();
 		
-		
-
-		//last Point of Intersection
-		private Point lastIntersectionPoint;
-		
-		
+		/**
+		 * Constructor
+		 * @param outerAlignmentCircle space to be covered by circles
+		 * @param listOfRadii list of the radii (sorted, descending) of circles we want to place
+		 * @param tolerance tolerance with which the circles are placed on the alignment circles
+		 * @param ccw true-> use counterclokwise
+		 * @param poh true -> use place over hole
+		 */
 		public CC_Iteration (Circle outerAlignmentCircle, ArrayList<Integer> listOfRadii, double tolerance, boolean ccw, boolean poh) {
+			this.isCovered = false;
+			this.listOfCirclesToPlace = new ArrayList<Circle>();
+			this.listOfPlacedCircles = new ArrayList<Circle>();
+			this.listOfAlignmentCircles = new ArrayList<Circle>();
+			
 			this.outerAlignmentCircle = outerAlignmentCircle;
 			for(int i = 0; i <= listOfRadii.size() -1; i++) {
 				Circle c = new Circle (listOfRadii.get(i));
 				listOfCirclesToPlace.add(c);
 			}
 			this.tolerance = tolerance;
-			this.finished = false;
 			this.ccw = ccw;
 			this.poh = poh;
 			
@@ -49,54 +58,57 @@ public class CC_Iteration {
 	
 	//-------------FILL-------------	
 	/**
-	 * Fills an outer alignment circle by creating and filling new inner alignment circles
+	 * Fills the outer alignment circle by creating and filling new inner alignment circles
 	 * @param outerAlignementCircle circle to be filled by the given circles
 	 * @return if circle is covered completely -> true, else -> false
 	 */
 	public boolean fillOuterAlignementCircle() {
-		listOfAlginementCircles.add(this.outerAlignmentCircle);
+		listOfAlignmentCircles.add(this.outerAlignmentCircle);
 		
 		Circle currentAlignmentCircle = outerAlignmentCircle;	
 		Circle nextAlignmentCircle;
 		while(!listOfCirclesToPlace.isEmpty()) {
 			
-			nextAlignmentCircle = fillAlignementCircle(currentAlignmentCircle);	
+			nextAlignmentCircle = fillAlignmentCircle(currentAlignmentCircle);	//setzt iscovered ?
+			
 			if(nextAlignmentCircle == null) {
 				break;
 			}
-			//TODO duplicate in list
-			if(!listOfAlginementCircles.contains(nextAlignmentCircle)) {
-				listOfAlginementCircles.add(nextAlignmentCircle);
+			//TODO why ? tell my why ..... :(
+			//Björn: warum ist das notwendig ?
+			//eigentlich dürfte next a nicht in liste sein
+			if(!listOfAlignmentCircles.contains(nextAlignmentCircle)) {
+				listOfAlignmentCircles.add(nextAlignmentCircle);
 			}
 			
 			currentAlignmentCircle = nextAlignmentCircle;	
 		}
 		
-		return finished;
+		return isCovered;
 	}
 	
 	/**
 	 * Fill one alignement circle
-	 * @param currentAlignmentCircle
-	 * @param uncoveredSpace2
-	 * @return
+	 * @param currentAlignmentCircle alignment circle we want to cover
+	 * @return next alginment circle if posssible else null
 	 */
-	public Circle fillAlignementCircle(Circle currentAlignmentCircle) {
+	private Circle fillAlignmentCircle(Circle currentAlignmentCircle) {
 		boolean newRow = false;
 		
 		ArrayList<Circle> currentRow = new ArrayList<Circle>();
 		Circle newAlignmentCircle = null;
 		
+		//place first circle
 		Circle firstCircle = listOfCirclesToPlace.get(0);
 		if(placeFirstCircle(firstCircle, currentAlignmentCircle)) {
-			finished = true;
-			return null;
+			isCovered = true;
+			return newAlignmentCircle;
 		}
-		
 		currentRow.add(firstCircle);
-		//look if circle is covered
+		
 		Point veryFirstIntersectionPoint = findVeryFirstIntersectionPoint(firstCircle, currentAlignmentCircle);
 		
+		//place other circles
 		ListIterator<Circle> listIterator = listOfCirclesToPlace.listIterator(0); 
 		
 		while(listIterator.hasNext()) {
@@ -111,7 +123,7 @@ public class CC_Iteration {
 			//check if row is finished
 			if(CC_Functions.getCenterPoint(currentCircle).calucateDistanceToPoint(veryFirstIntersectionPoint) <= currentCircle.getRadius()) {
 				lookIfAlignmentCircleIsCovered(currentRow,currentAlignmentCircle);
-				if(finished) {
+				if(isCovered) {
 					newRow = false;
 					break;
 				}
@@ -132,7 +144,7 @@ public class CC_Iteration {
 					if(i < currentRow.size()) {
 						newRow = true;
 						lookIfAlignmentCircleIsCovered(currentRow,currentAlignmentCircle);
-						if(finished) {
+						if(isCovered) {
 							newRow = false;
 						}
 						break;
@@ -155,49 +167,55 @@ public class CC_Iteration {
 	/**
 	 * Places first circle of the row
 	 * @param circleToBePlaced circle that is to be placed first on the alignement circle 
-	 * @param currentAlignmentCircle circle that is to be covered
+	 * @param alignmentCircle circle that is to be covered
 	 * @return placed first circle
 	 */
-	public boolean placeFirstCircle(Circle circleToBePlaced, Circle currentAlignmentCircle) {
+	private boolean placeFirstCircle(Circle circleToBePlaced, Circle alignmentCircle) {
 		Circle firstCircle = circleToBePlaced;
-		if(firstCircle.getRadius() >= currentAlignmentCircle.getRadius()) {
-			firstCircle.setCenterX(currentAlignmentCircle.getCenterX());
-			firstCircle.setCenterY(currentAlignmentCircle.getCenterY());
+		if(firstCircle.getRadius() >= alignmentCircle.getRadius()) {
+			firstCircle.setCenterX(alignmentCircle.getCenterX());
+			firstCircle.setCenterY(alignmentCircle.getCenterY());
 			
 			listOfPlacedCircles.add(firstCircle);
 			listOfCirclesToPlace.remove(0);
-			finished = true;
+			isCovered = true;
 			return true;
 		}
 		
-		firstCircle.setCenterX(currentAlignmentCircle.getCenterX() + (currentAlignmentCircle.getRadius() + (CC_Functions.getDiameter(firstCircle) * tolerance)) - firstCircle.getRadius());
-		firstCircle.setCenterY(currentAlignmentCircle.getCenterY());
-		listOfPlacedCircles.add(firstCircle);
+		firstCircle.setCenterX(alignmentCircle.getCenterX() + (alignmentCircle.getRadius() + (CC_Functions.getDiameter(firstCircle) * tolerance)) - firstCircle.getRadius());
+		firstCircle.setCenterY(alignmentCircle.getCenterY());
 		
+		listOfPlacedCircles.add(firstCircle);
 		listOfCirclesToPlace.remove(0);
+		
 		return false;
 	}
 	
 	/**
-	 * Places one Circle
+	 * Places one Circle on the alignment circle
 	 * @param circleToBePlaced circle that is to be placed
-	 * @param outerCircle circle that is to be covered
+	 * @param alignmentCircle circle that is to be covered
+	 * @return placed circle
 	 */
-	public Circle placeNextCircle(Circle circleToBePlaced, Circle outerCircle) {
+	private Circle placeNextCircle(Circle circleToBePlaced, Circle alignmentCircle) {
 		
-		Circle currentCircle = CC_Functions.checkIfCircleIsBiggerThanAlignmentCircle(circleToBePlaced,outerCircle);
+		Circle currentCircle = CC_Functions.checkIfCircleIsBiggerThanAlignmentCircle(circleToBePlaced,alignmentCircle);
 		Circle previousCircle = getListOfPlacedCircles().get(getListOfPlacedCircles().size()-1);
 		
 		//find intersection points
-		ArrayList<Point> intersectPoints = CC_Functions.findIntersectionPoints(previousCircle,outerCircle);
+		ArrayList<Point> intersectPoints = CC_Functions.findIntersectionPoints(previousCircle,alignmentCircle);
 		if(intersectPoints.size() <= 1) {
 			System.out.println("Intersectionlist is empty");
 		}
 		
-		Point intersectPoint = CC_Functions.findNextAlginmentPoint(intersectPoints, lastIntersectionPoint);
-		lastIntersectionPoint = intersectPoint;	
+		alignmentPoint = CC_Functions.findNextAlignmentPoint(intersectPoints, alignmentPoint);
 		
-		currentCircle = CC_Functions.setCenterOfNextCircle(currentCircle, intersectPoint, outerCircle, tolerance);
+		
+		boolean enableCCW = false;
+		if(ccw && listOfAlignmentCircles.size() % 2 == 0) {
+			enableCCW = true;
+		}
+		currentCircle = CC_Functions.setCenterOfNextCircle(currentCircle, alignmentPoint, alignmentCircle, tolerance, enableCCW);
 		
 		listOfPlacedCircles.add(currentCircle);
 		
@@ -205,29 +223,36 @@ public class CC_Iteration {
 	}
 	
 	/**
-	 * Finds very First Intersection Point that must be covered to fill on alignment circle
+	 * Finds very first Intersection Point that must be covered to fill on alignment circle
 	 * @param firstCircle circle that is placed first
 	 * @param alignmentCircle current alignment circle
-	 * @return
+	 * @return the very first intersection point
 	 */
-	public Point findVeryFirstIntersectionPoint(Circle firstCircle, Circle alignmentCircle) {
+	private Point findVeryFirstIntersectionPoint(Circle firstCircle, Circle alignmentCircle) {
 		
 		Point veryFirstIntersectionPoint = null;
 		ArrayList<Point> intersectPoints = CC_Functions.findIntersectionPoints(firstCircle, alignmentCircle);
-		Point alignmentPoint = new Point(alignmentCircle.getCenterX(), alignmentCircle.getRadius()); 
-		Point intersectPoint = CC_Functions.findNextClockwisePoint(CC_Functions.getCenterPoint(alignmentCircle), alignmentPoint, intersectPoints, listOfAlginementCircles.size(), ccw);
+		
+		Point alignmentPointOfAlginmentCircle = new Point(alignmentCircle.getCenterX(), alignmentCircle.getRadius()); 
+		boolean enableCCW = false;
+		if(ccw && listOfAlignmentCircles.size() % 2 == 0) {
+			enableCCW = true;
+		}
+		
+		Point intersectPoint = CC_Functions.findNextClockwisePoint(CC_Functions.getCenterPoint(alignmentCircle), alignmentPointOfAlginmentCircle, intersectPoints,enableCCW);
 		
 		if(intersectPoint.equals(intersectPoints.get(0))){
 			veryFirstIntersectionPoint = intersectPoints.get(1);
-			lastIntersectionPoint = intersectPoints.get(1);
+			alignmentPoint = intersectPoints.get(1);
 		}
 		else if(intersectPoint.equals(intersectPoints.get(1))) {
 			veryFirstIntersectionPoint = intersectPoints.get(0);
-			lastIntersectionPoint = intersectPoints.get(0);
+			alignmentPoint = intersectPoints.get(0);
 		}
 		else{
 			System.out.println(" Intersection Point not found!" );
 		}
+		
 		return veryFirstIntersectionPoint;
 	}
 	
@@ -236,23 +261,24 @@ public class CC_Iteration {
 	/**
 	 * closes current row and places last circle
 	 * @param currentRow all circles of the current row
-	 * @param outerCircle circle that is to be covered
-	 * @return placed circle
+	 * @param alignmentCircle circle that is to be covered
+	 * @return new alignment circle
 	 */
-	public Circle closeRow(ArrayList<Circle> currentRow, Circle outerCircle) {
+	private Circle closeRow(ArrayList<Circle> currentRow, Circle alignmentCircle) {
+		
 		ArrayList<Point> points = new ArrayList<Point>();
-		for(IntersectionPoint z :CC_Functions.findInnerIntersectionPoints(currentRow, outerCircle)) {
+		for(IntersectionPoint z :CC_Functions.findInnerIntersectionPoints(currentRow, alignmentCircle)) {
 			Point p  = new Point(z.getPointOfIntersection().getX(), z.getPointOfIntersection().getY());
 			points.add(p);
 		}
-		if(CC_Functions.findInnerIntersectionPoints(currentRow, outerCircle).isEmpty()) System.out.print(" list of innerIntersectionpoints is empty ");
+		if(CC_Functions.findInnerIntersectionPoints(currentRow, alignmentCircle).isEmpty()) System.out.print(" list of innerIntersectionpoints is empty ");
+		
 		Circle c = Miniball.makeCircle(points); 
 		Circle newOuterCircle = new Circle(c.getCenterX(),c.getCenterY(),c.getRadius());
 		
+		if(newOuterCircle == null) System.out.print(" newAlignmentCircle is null ");
 		
-		if(newOuterCircle == null) System.out.print(" newOuterCircle is null ");
-		
-		listOfAlginementCircles.add(newOuterCircle);
+		listOfAlignmentCircles.add(newOuterCircle);
 		
 		return newOuterCircle;
 	}
@@ -260,44 +286,44 @@ public class CC_Iteration {
 	/**
 	 * looks if the alginment circle is covered then sets finished to true if covered
 	 * @param allCirclesOfCurrentRow list of all circles of current row
-	 * @param alginmentCircle alginment circle
+	 * @param alginmentCircle current alginment circle
 	 */
-	public void lookIfAlignmentCircleIsCovered (ArrayList<Circle> allCirclesOfCurrentRow, Circle alginmentCircle){
+	private void lookIfAlignmentCircleIsCovered (ArrayList<Circle> allCirclesOfCurrentRow, Circle alginmentCircle){
 		ArrayList<IntersectionPoint> points = new ArrayList<IntersectionPoint>();
 		points = CC_Functions.findInnerIntersectionPoints(allCirclesOfCurrentRow, alginmentCircle);
 		
 		if(points.isEmpty()) {
-			finished = true;
+			isCovered = true;
 		}
 		else {
-			finished = false;
+			isCovered = false;
 		}
 		
 	}
 	
 	//--------------special cases-----------------
 	/**
-	 * Places circle over the outer circle if circle to placed is bigger than outerCircle 
+	 * Places circle over the alignment circle if circle to placed is bigger than alignmentcircle 
 	 * @param currentCircle circle that is to be placed
-	 * @param outerCircle circle that is to be covered
+	 * @param alignmentCircle circle that is to be covered
 	 * @return placed circle
 	 */
-	public Circle placeCircleOverAlignmentCircle(Circle currentCircle, Circle outerCircle) {
-		currentCircle.setCenterX(outerCircle.getCenterX());
-		currentCircle.setCenterY(outerCircle.getCenterY());
+	private Circle placeCircleOverAlignmentCircle(Circle currentCircle, Circle alignmentCircle) {
+		currentCircle.setCenterX(alignmentCircle.getCenterX());
+		currentCircle.setCenterY(alignmentCircle.getCenterY());
 		return currentCircle;
 	}
 	
 	/**
 	 * place a circle over the hole 
-	 * @param veryFirstIntersectionPoint
-	 * @param currentCircle
-	 * @param currentAlignmentCircle
-	 * @param currentRow
-	 * @param intersectionPointsOfCirclesOfRow
-	 * @return
+	 * @param veryFirstIntersectionPoint the point we need to cover to close a row
+	 * @param currentCircle circle that was just placed
+	 * @param currentAlignmentCircle alginment circle
+	 * @param currentRow list of all circles of current row
+	 * @param intersectionPointsOfCirclesOfRow all Intersection points of the current row
+	 * @return the list of the current row addec with the circle just placed 
 	 */
-	public ArrayList<Circle> placeCircleOverHole(Point veryFirstIntersectionPoint, Circle currentCircle, Circle currentAlignmentCircle, ArrayList<Circle> currentRow, ArrayList<Point> intersectionPointsOfCirclesOfRow) {
+	private ArrayList<Circle> placeCircleOverHole(Point veryFirstIntersectionPoint, Circle currentCircle, Circle currentAlignmentCircle, ArrayList<Circle> currentRow, ArrayList<Point> intersectionPointsOfCirclesOfRow) {
 		//ArrayList<Circle> currentRow; = new ArrayList<Circle>();
 		if(intersectionPointsOfCirclesOfRow.size() == 2) {
 			
@@ -354,48 +380,35 @@ public class CC_Iteration {
 		return currentRow;
 	}
 	//-----------Getter & Setter-------------
-	/**
-	 * Gets the list of placed circles
-	 * @return list of placed circles
-	 */
+	
 	public ArrayList<Circle> getListOfPlacedCircles() {
 		return listOfPlacedCircles;
 	}
 
-	/**
-	 * Sets the list of placed circles
-	 * @param list of placed circles which is to be set
-	 */
+	
 	public void setListOfPlacedCircles(ArrayList<Circle> listOfPlacedCircles) {
 		this.listOfPlacedCircles = listOfPlacedCircles;
 	}
 	
-	/**
-	 * Gets the list of circles to be placed
-	 * @return list of circles to be placed
-	 */
+	
 	public ArrayList<Circle> getListOfCirclesToPlace() {
 		return listOfCirclesToPlace;
 	}
 
-	/**
-	 * Sets the list of circles to be placed
-	 * @param list of placed circles which is to be set
-	 */
+	
 	public void setListOfCirclesToPlace(ArrayList<Circle> listOfAllCircles) {
 		this.listOfCirclesToPlace = listOfAllCircles;
 	}
-	public Point getLastIntersectPoint_OuterCircleToCircle() {
-		return lastIntersectionPoint;
-	}
-
 	
+	public Point getLastIntersectPoint_OuterCircleToCircle() {
+		return alignmentPoint;
+	}
 
 	public void setListOfAlignementCircles(ArrayList<Circle> listOfAlignementCircles) {
-		this.listOfAlginementCircles = listOfAlignementCircles;
+		this.listOfAlignmentCircles = listOfAlignementCircles;
 	}
 	public ArrayList<Circle> getListOfAlignmentCircles(){
-		return listOfAlginementCircles;
+		return listOfAlignmentCircles;
 	}
 
 }

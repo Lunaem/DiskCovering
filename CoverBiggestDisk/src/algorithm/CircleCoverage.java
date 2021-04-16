@@ -29,6 +29,12 @@ public class CircleCoverage {
 		public ArrayList<Integer> listOfCircles_Data = new ArrayList<Integer>();
 		public boolean finished;
 
+	//List to store all circles that need to be placed in current iteration 
+	private int circlesLeftToPlace;
+	//List to store all circles placed
+	private ArrayList<Circle> listOfPlacedCircles = new ArrayList<Circle>();
+	private ArrayList<Circle> listOfAlginementCircles = new ArrayList<Circle>();
+	
 	/**
 	 * Constructor
 	 * @param data data that is being used
@@ -48,8 +54,8 @@ public class CircleCoverage {
 		}
 
 		//sort list of circles
-		//Collections.sort(listOfCircles_Data, CircleSpaceCalculation.circleComparator);
 		Collections.sort(listOfCircles_Data);
+		Collections.reverse(listOfCircles_Data);
 	}
 
 	/**
@@ -69,10 +75,6 @@ public class CircleCoverage {
 
 		//try to cover circles of decreasing size
 		while(!(finished && ((maxSpace - minSpace) <=  1e-10))) {
-			//listOfCirclesToPlace.clear();
-			//listOfPlacedCircles.clear();
-			//listOfAlignementCircles.clear();
-			//listOfIntersectionPoints.clear();
 			finished = false;
 
 			double currentSpace = (minSpace + maxSpace) / 2;
@@ -110,15 +112,16 @@ public class CircleCoverage {
 
 
 		}
-
+		circlesLeftToPlace = cci.getListOfCirclesToPlace().size();
+		listOfPlacedCircles = cci.getListOfPlacedCircles();
+		listOfAlginementCircles = cci.getListOfAlignmentCircles();
+		
 		DrawingTools.returnElementsToDraw(true, cci.getListOfPlacedCircles(), cci.getListOfAlignmentCircles());
-
-		//TODO look at slightly bigger circles
 	}
 	
 	/**
-	 * Creates an initial outer Circle at the beginning of the iteration
-	 * @param iteration current iteration
+	 * Creates an initial outer alignemt Circle at the beginning of the iteration
+	 * @param spaceOfCircle space of the circle we create
 	 */
 	public Circle createOuterAlignementCircle(double spaceOfCircle){
 		
@@ -128,53 +131,46 @@ public class CircleCoverage {
 	}
 	
 	//---------Getter & Setter-----------
-	/**
-	 * Gets the tolerance factor
-	 * @return the tolerance factor
-	 */
+	
 	public double getTolerance() {
 		return tolerance;
 	}	
-	/**
-	 * Gets the boolean value finished
-	 * @return finished
-	 */
+	
 	public boolean getFinished() {
 		return finished;
 	}	
-	/**
-	 * Sets if the circles are placed ccw or cw
-	 * @param value
-	 */
+	
 	public void setCCW(boolean value) {
 		this.ccw = value;
 	}
-	/**
-	 * Sets if the circles are placed over holes or not
-	 * @param value
-	 */
+	
 	public void setPOH(boolean value) {
 		this.poh = value;
 	}
-	/**
-	 * Sets the value of stop iteration
-	 * @param value 
-	 */
+	
 	public void setStopIteration(int value) {
 		this.stop_iteration = value;
-	}	
-	/**
-	 * Sets the value of the tolerance
-	 * @param value 
-	 */
+	}
+
 	public void setTolerance(double value) {
 		this.tolerance = value;
 	}
 	
-	
-	
 	public ArrayList<Circle> getListOfABC(){
 		return this.listOfIntersectionPoints;
+	}
+
+	public int getCirclesLeftToPlace() {
+		return circlesLeftToPlace;
+	}
+
+	public ArrayList<Circle> getListOfPlacedCircles() {
+		return listOfPlacedCircles;
+	}
+
+
+	public ArrayList<Circle> getListOfAlginementCircles() {
+		return listOfAlginementCircles;
 	}
 
 }

@@ -6,7 +6,8 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 
-import drawing.CircleSpaceCalculation;
+import algorithm.CC_Functions;
+import algorithm.CircleCoverage;
 import javafx.application.Application;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -53,7 +54,9 @@ public class Window extends Application {
 	
 	private Group root = new Group();
 	private Data data = new Data();
-	private Stage sec = new Stage();
+	private Stage stage = new Stage();
+	private VBox layout = new VBox();
+	
 	 
 	private Button startButton = new Button("Start");
 	private TextField stopIteration = new TextField();   
@@ -67,6 +70,7 @@ public class Window extends Application {
 	private Label sizeOfDisk = new Label("Size of disk: ");
 	private Label radiusOfDisk = new Label("Radius of disk: ");
 	private Button loadButton = new Button("Load");
+	
 		
 	@Override
     public void start(Stage primaryStage) throws Exception {
@@ -108,7 +112,6 @@ public class Window extends Application {
         
        
         Pane pane = new Pane(root);
-        Scene scene2 = new Scene(pane); 
         
         
         
@@ -117,7 +120,7 @@ public class Window extends Application {
         
         nextAlignButton.setOnAction(nextAlignButtonEvent);
         
-       loadButton.setOnAction(loadButtonEvent);
+        loadButton.setOnAction(loadButtonEvent);
        
 		GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 		int width = gd.getDisplayMode().getWidth();
@@ -129,24 +132,24 @@ public class Window extends Application {
     
 		
 		Parent zoomPane = createZoomPane(root);
-
-	    VBox layout = new VBox();
 	    layout.getChildren().setAll(zoomPane);
-
 	    VBox.setVgrow(zoomPane, Priority.ALWAYS);
-	    Scene scene3 = new Scene(layout);
+	    Scene scene_algorithm = new Scene(layout);
 	    
         Scene scene = new Scene(gridPane); 
-        sec.setScene(scene3);
-		primaryStage.setTitle("CoverBiggestDisk"); 
+        stage.setScene(scene_algorithm);
+		primaryStage.setTitle("Circle Coverage"); 
 		primaryStage.setScene(scene); 
 		primaryStage.show(); 
+		
+		
 	
     }
 	
 	 private Parent createZoomPane(final Group group) {
 		    final double SCALE_DELTA = 1.1;
 		    final StackPane zoomPane = new StackPane();
+		  
 
 		    zoomPane.getChildren().add(group);
 		    StackPane.setAlignment(group, Pos.CENTER);
@@ -159,6 +162,7 @@ public class Window extends Application {
 		      @Override
 		      public void changed(ObservableValue<? extends Bounds> observable,
 		          Bounds oldValue, Bounds newValue) {
+		        zoomPane.setMinSize(newValue.getWidth(), newValue.getHeight());
 		        zoomPane.setMinSize(newValue.getWidth(), newValue.getHeight());
 		      }
 		    });
@@ -288,7 +292,7 @@ public class Window extends Application {
       EventHandler<ActionEvent> startButtonEvent = new EventHandler<ActionEvent>() {
 	      @Override
 	      public void handle(ActionEvent event) {
-	      	CircleSpaceCalculation drawingInstance = new CircleSpaceCalculation(data); 
+	      	CircleCoverage drawingInstance = new CircleCoverage(data); 
 	      	
 	      	if (ccw.isSelected()) {
 	              drawingInstance.setCCW(true);
@@ -312,13 +316,18 @@ public class Window extends Application {
 	      	//root = UIInstance.showUI(drawingInstance);
 	      	
 	      	
-	      	listOfAlignementCircles = drawingInstance.getListOfAlignmentCircles();
+	      	listOfAlignementCircles = drawingInstance.getListOfAlginementCircles();
 	      	listOfPlacedCircles = drawingInstance.getListOfPlacedCircles();
 	      	root.getChildren().add(listOfAlignementCircles.get(0));
-	      	sizeOfDisk.setText("Size of disk: " + String.valueOf(drawingInstance.getSpace(listOfAlignementCircles.get(0))));
-	      	radiusOfDisk.setText("Radius of disk: " + String.valueOf(drawingInstance.getRadiusOfDisk()));
-				
-	      	sec.show();
+	      	sizeOfDisk.setText("Size of disk: " + String.valueOf(CC_Functions.getSpace(listOfAlignementCircles.get(0))));
+	      	radiusOfDisk.setText("Radius of disk: " + String.valueOf(listOfAlignementCircles.get(0).getRadius()));
+			
+	      	
+	      	layout.setPrefWidth(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode().getWidth() - 100);
+	 	    layout.setPrefHeight(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode().getHeight() - 100);
+	 	    
+	 	    
+	      	stage.show();
 	      }
       };
 }
