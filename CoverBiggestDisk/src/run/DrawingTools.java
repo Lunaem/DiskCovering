@@ -20,39 +20,30 @@ public class DrawingTools {
 	 * @param debug indicates if elements that are used for developing are to be shown
 	 * @return Group group which holds all elements that are to be drawned
 	 */
-	public static Group returnElementsToDraw(Boolean debug, ArrayList<Circle> listOfPlacedCircles, ArrayList<Circle> listOfAlignementCircles) {
+	public static void colorElements(Boolean debug, ArrayList<Circle> listOfPlacedCircles, ArrayList<Circle> listOfAlignementCircles, ArrayList<Circle> listOfPoints) {
 		for(Circle c: listOfPlacedCircles) {
 			c.setFill(Color.TRANSPARENT);
 			if(c.getStroke() == null) {
 				c.setStroke(Color.BLACK);
 			}
 		}
-		
-		Group root = new Group();	
-		root.getChildren().addAll(listOfPlacedCircles);
-		drawCoordinateSystem(root);
-		
-		//OuterCircles -> RED
+		//AlginmentCircles -> RED
 			for(Circle c: listOfAlignementCircles) {
 			c.setFill(Color.TRANSPARENT);
 			c.setStroke(Color.RED);
 			}
-			root.getChildren().addAll(listOfAlignementCircles);
 		
 		//add debug elements
 		if(debug) {
-			
-			
-			
+			double radius = listOfAlignementCircles.get(0).getRadius()*0.01;
 			//TODO DELETE TEST ONLY-> GREEN
 			for(Circle i : listOfPoints){
+				i.setRadius(radius);
 				i.setStroke(Color.GREEN);
-				i.setFill(Color.TRANSPARENT);
+				i.setFill(Color.GREEN);
 			} 
-			root.getChildren().addAll(listOfPoints);
 		}
 		
-		return root;
 	}
 	
 	/**

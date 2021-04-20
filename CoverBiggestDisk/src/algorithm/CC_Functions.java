@@ -8,7 +8,7 @@ import javafx.scene.shape.Circle;
 public class CC_Functions {
 	
 	//threshold used to allow minimal errors in calculations
-	final static double epsilon = 1e-6;
+	private final static double epsilon = 1e-6;
 	
 	
 	//------------Calculation of Points-------------
@@ -265,6 +265,7 @@ public class CC_Functions {
 	 * @param nextCircle circle that is being placed
 	 * @param firstAlignmentPoint first intersection point of nextCircle and alignment circle
 	 * @param alignmentCircle current alignment circle
+	 * @param tolerance tolerance with which the circle is placed
 	 * @param ccw counter clockwise option
 	 * @return nextCircle reference	 
 	 */

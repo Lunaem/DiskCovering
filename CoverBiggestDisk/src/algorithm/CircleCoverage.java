@@ -8,43 +8,42 @@ import javafx.scene.shape.Circle;
 import run.Data;
 
 public class CircleCoverage {
-	//threshold used to allow minimal errors in calculations
-		//final double threshold = 1e-6;
-		//var used to stop the algorithm after 
-		int stop_iteration = 1800; //TODO DELETE , add ad debug
-		int global_iteration_count;
-		boolean ccw = false;
-		boolean poh = false;
 		
-		//list for tests
-		//TODO DELETE , add to debug
-		public ArrayList<Circle> listXYZ = new ArrayList<Circle>();
-		public ArrayList<Circle> listOfIntersectionPoints = new ArrayList<Circle>();
-		
-		
-		//tolerance for placing circles
-		public double tolerance = 0.30; 
-	
-	//List to store all circles 
-		public ArrayList<Integer> listOfCircles_Data = new ArrayList<Integer>();
-		public boolean finished;
+	private int global_iteration_count; 
+	private Data data;
 
-	//List to store all circles that need to be placed in current iteration 
-	private int circlesLeftToPlace;
+	//user parameters
+	private int stop_iteration; //var used to stop the algorithm after x iterations
+	private boolean ccw; 
+	private boolean poh;
+	private double tolerance; //tolerance for placing circles
+	
+	//list for debug info
+	private ArrayList<Circle> listOfIntersectionPoints;
+		
+	//List to store radii of circles we want to place
+	private ArrayList<Integer> listOfCircles_Data;
+	
+	
 	//List to store all circles placed
-	private ArrayList<Circle> listOfPlacedCircles = new ArrayList<Circle>();
-	private ArrayList<Circle> listOfAlginementCircles = new ArrayList<Circle>();
+	private ArrayList<Circle> listOfPlacedCircles;
+	private ArrayList<Circle> listOfAlignementCircles;
+	private int circlesLeftToPlace;	//number of circles that are left after circle has been covered
 	
 	/**
 	 * Constructor
 	 * @param data data that is being used
 	 */
 	public CircleCoverage(Data data) {
-		loadData(data);
+		this.data = data;
+		ccw = false;
+		poh = false;
+		tolerance = 0.30; //TODO blend in window
+		init();
 	}
 	
 	//loads data of circles
-	public void loadData(Data data) {
+	private void loadData() {
 
 		for(int radius: data.getListOfCircles_Data()) {
 			listOfCircles_Data.add(radius);
@@ -57,13 +56,22 @@ public class CircleCoverage {
 		Collections.sort(listOfCircles_Data);
 		Collections.reverse(listOfCircles_Data);
 	}
+	
+	public void init() {
+		global_iteration_count = 0;
+		listOfIntersectionPoints = new ArrayList<Circle>();
+		listOfCircles_Data = new ArrayList<Integer>();
+		listOfPlacedCircles = new ArrayList<Circle>();
+		listOfAlignementCircles = new ArrayList<Circle>();
+		loadData();
+	}
 
 	/**
 	 * Find biggest circle that is completely covered by given circles
 	 */
 	public void calculateBiggestCircle() {
-		finished = false;
-		int iteration = 0;
+		boolean isCovered = false;
+		global_iteration_count = 1;
 		CC_Iteration cci = null;
 
 		double minSpace = CC_Functions.getSpace(new Circle(listOfCircles_Data.get(0)));
@@ -74,54 +82,50 @@ public class CircleCoverage {
 		} 
 
 		//try to cover circles of decreasing size
-		while(!(finished && ((maxSpace - minSpace) <=  1e-10))) {
-			finished = false;
-
+		while(!(isCovered && ((maxSpace - minSpace) <=  1e-10))) {
+			
+			isCovered = false;
 			double currentSpace = (minSpace + maxSpace) / 2;
+			
 			System.out.println("____________________");
-			System.out.println(" iteration: " + iteration + " ");
-			Circle outerAlignementCircle = createOuterAlignementCircle(currentSpace);
-			
-			cci = new CC_Iteration(outerAlignementCircle, listOfCircles_Data, tolerance, ccw, poh);
-			
-			finished = cci.fillOuterAlignementCircle();
-
-			System.out.println("space: " + CC_Functions.getSpace(outerAlignementCircle)+ " ");
+			System.out.println(" iteration: " + global_iteration_count + " ");
+			System.out.println("space: " + currentSpace + " ");
 			System.out.println("min: " + minSpace + " ");
 			System.out.println("max:  " + maxSpace+ " ");
-
+			
+			Circle outerAlignementCircle = createOuterAlignementCircle(currentSpace);
+			cci = new CC_Iteration(outerAlignementCircle, listOfCircles_Data, tolerance, ccw, poh);
+			isCovered = cci.fillOuterAlignementCircle();
+			
 			System.out.println(" circles left: " + cci.getListOfCirclesToPlace().size() + " ");
-
-
-			System.out.println(finished);
-
+			System.out.println(isCovered);
 			System.out.println("____________________");
 
-			iteration++;
-			global_iteration_count = iteration;
-
-			if(finished) {
+			if(isCovered) {
 				minSpace = currentSpace;
 			}
-			if(!finished) {
+			if(!isCovered) {
 				maxSpace = currentSpace;
 			}
-			if(iteration == stop_iteration) {
+			
+			if(global_iteration_count == stop_iteration) {
 				break;
 			}
-
+			global_iteration_count ++;
 
 		}
 		circlesLeftToPlace = cci.getListOfCirclesToPlace().size();
 		listOfPlacedCircles = cci.getListOfPlacedCircles();
-		listOfAlginementCircles = cci.getListOfAlignmentCircles();
+		listOfAlignementCircles = cci.getListOfAlignmentCircles();
+		listOfIntersectionPoints = cci.getListOfIntersectionPoints();
 		
-		DrawingTools.returnElementsToDraw(true, cci.getListOfPlacedCircles(), cci.getListOfAlignmentCircles());
+		DrawingTools.colorElements(true, listOfPlacedCircles, listOfAlignementCircles, listOfIntersectionPoints);
 	}
 	
 	/**
 	 * Creates an initial outer alignemt Circle at the beginning of the iteration
 	 * @param spaceOfCircle space of the circle we create
+	 * @return circle with given space
 	 */
 	public Circle createOuterAlignementCircle(double spaceOfCircle){
 		
@@ -134,10 +138,6 @@ public class CircleCoverage {
 	
 	public double getTolerance() {
 		return tolerance;
-	}	
-	
-	public boolean getFinished() {
-		return finished;
 	}	
 	
 	public void setCCW(boolean value) {
@@ -156,7 +156,7 @@ public class CircleCoverage {
 		this.tolerance = value;
 	}
 	
-	public ArrayList<Circle> getListOfABC(){
+	public ArrayList<Circle> getListOfIntersectionPoints(){
 		return this.listOfIntersectionPoints;
 	}
 
@@ -168,9 +168,8 @@ public class CircleCoverage {
 		return listOfPlacedCircles;
 	}
 
-
 	public ArrayList<Circle> getListOfAlginementCircles() {
-		return listOfAlginementCircles;
+		return listOfAlignementCircles;
 	}
 
 }

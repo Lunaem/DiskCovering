@@ -69,6 +69,7 @@ public class Window extends Application {
 	private CheckBox intersectionPoint = new CheckBox("Show intersection points"); 
 	private Label sizeOfDisk = new Label("Size of disk: ");
 	private Label radiusOfDisk = new Label("Radius of disk: ");
+	private Label runningtime = new Label("Running time of algorithm: ");
 	private Button loadButton = new Button("Load");
 	
 		
@@ -106,6 +107,7 @@ public class Window extends Application {
         gridPane.add(intersectionPoint, 1, 2); 
         gridPane.add(sizeOfDisk, 1, 3);
         gridPane.add(radiusOfDisk, 1, 4);
+        gridPane.add(runningtime, 1, 5);
  
         
         //data.setFileLocation("C:/Users/Lunaem/Desktop/data.csv");
@@ -308,10 +310,12 @@ public class Window extends Application {
 	      		drawingInstance.setTolerance(Double.parseDouble(tolerance.getText()));
 	      		
 	      	}
-	      	
+	      	long startTime = System.nanoTime();
 	      	drawingInstance.calculateBiggestCircle();
+	      	long endTime = System.nanoTime();
+	      	long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
 	      	if (intersectionPoint.isSelected()) {
-	              root.getChildren().addAll(drawingInstance.getListOfABC());
+	              root.getChildren().addAll(drawingInstance.getListOfIntersectionPoints());
 	           }
 	      	//root = UIInstance.showUI(drawingInstance);
 	      	
@@ -321,7 +325,7 @@ public class Window extends Application {
 	      	root.getChildren().add(listOfAlignementCircles.get(0));
 	      	sizeOfDisk.setText("Size of disk: " + String.valueOf(CC_Functions.getSpace(listOfAlignementCircles.get(0))));
 	      	radiusOfDisk.setText("Radius of disk: " + String.valueOf(listOfAlignementCircles.get(0).getRadius()));
-			
+			runningtime.setText("Running time of algorithm: " + String.valueOf(duration));
 	      	
 	      	layout.setPrefWidth(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode().getWidth() - 100);
 	 	    layout.setPrefHeight(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode().getHeight() - 100);
